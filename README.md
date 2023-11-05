@@ -21,8 +21,8 @@ SpringBoot + mybatispls + mysql + sms
 本项目后端采用springboot,mybatis-plus等技术,使用mysql数据库.使用maven构建项目
 
 1. 使用maven加入依赖
-2. 准备好mysql数据库
-3. 在配置文件中修改填上你的数据库账号/密码,如果非本机数据库还要填上对应的url  
+2. 准备好mysql数据库,redis数据库
+3. 在配置文件中修改填上你的数据库账号/密码(如果设置了的话),如果非本机数据库还要填上对应的url  
 至此你已经可以有效的运行起项目了.  
 4. 文件存储位置修改: 你可以在配置文件中修改nanqiang.path,已调整文件存放位置  
 > 上传的图片默认会在D:/image/ 中

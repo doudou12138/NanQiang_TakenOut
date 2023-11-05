@@ -4,9 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import edu.doudou.NanqiangTakenout.Entity.User;
 import edu.doudou.NanqiangTakenout.mapper.UserMapper;
+import edu.doudou.NanqiangTakenout.service.UserCacheService;
 import edu.doudou.NanqiangTakenout.service.UserService;
 import edu.doudou.NanqiangTakenout.utils.ValidatorCodeUtil;
+import edu.doudou.NanqiangTakenout.utils.redis.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpSession;
@@ -15,8 +18,10 @@ import java.util.Map;
 @Slf4j
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+    private static final int MAX_SMS_REQUEST_PER_HOUR = 3;
 
-    //
+    @Autowired
+    private UserCacheService userCacheService;
 
 
     @Override
@@ -26,16 +31,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(phoneNumber==null){
             return "手机号为空.";
         }
-        String veriCode = ValidatorCodeUtil.generateValidateCode(6).toString();
 
+        if(!belowLimitSmsRequest(phoneNumber)){
+            return "请求次数过多，请下一个小时再尝试";
+        }
+
+
+        String veriCode = ValidatorCodeUtil.generateValidateCode(6).toString();
+        userCacheService.setBindRequestCount(phoneNumber);
         //通过阿里云发送验证码.测试已经成功
 //        AliyunSmsUtil.sendMessage(MediaMsgType.LOG_IN,phoneNumber,veriCode);
 
         log.info("该用户的验证码: " +phoneNumber + ":" +veriCode);
         //将验证码保存到Session
-        session.setAttribute(phoneNumber,veriCode);
+        userCacheService.setBindConfirmCode(phoneNumber,veriCode);
 
         return "成功发送验证码";
+    }
+
+    private boolean belowLimitSmsRequest(String phone) {
+        int count = userCacheService.getBindRequestCount(phone);
+        return count<MAX_SMS_REQUEST_PER_HOUR;
     }
 
     @Override
@@ -46,9 +62,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String phoneNumber = (String) map.get("phone");
         String code = (String) map.get("code");
 
-        String codeInSession = (String) session.getAttribute(phoneNumber);
+        String codeInRedis = userCacheService.getBindConfirmCode(phoneNumber);
 
-        if(code!=null&&code.equals(codeInSession)){
+        if(code!=null&&code.equals(codeInRedis)){
             //如果是新用户,直接注册
             LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(User::getPhone,phoneNumber);
@@ -62,7 +78,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
             session.setAttribute("user",user.getId());
         }else{
-            System.err.println("验证码 : "+codeInSession );
+            System.err.println("验证码 : "+codeInRedis );
         }
 
         return user;
