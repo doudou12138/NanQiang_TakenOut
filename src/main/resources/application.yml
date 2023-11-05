@@ -1,0 +1,21 @@
+server:
+  port: 8080  # 可自定义
+spring:
+  application:
+    name: nanqiang_takenout
+  datasource:
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/reggie?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true # 你的数据库地址
+      username: root  # 你的数据库用户名
+      password: Wty20030821  # 你的数据库密码
+mybatis-plus:
+  configuration:
+    #在映射实体或者属性时，将数据库中表名和字段名中的下划线去掉，按照驼峰命名法映射
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: ASSIGN_ID
+nanqiang:
+  path: D:\image\    # 上传图片存放位置
