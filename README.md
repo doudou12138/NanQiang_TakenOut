@@ -14,7 +14,7 @@
    - 下单 
    
 技术栈:
-SpringBoot + mybatispls + mysql + sms 
+SpringBoot + mybatispls + mysql + sms + redis
 
 
 # 运行说明
