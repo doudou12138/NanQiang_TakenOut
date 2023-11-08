@@ -85,6 +85,32 @@ public class RedisUtil {
     }
 
     /**
+     * 将值放入缓存,不设置过期时间
+     *
+     * @param key   键
+     * @param value 值
+     * @return true成功 false 失败
+     */
+    public void set(String key, Object value) {
+        redisTemplate.opsForValue().set(key, value);
+    }
+
+    /**
+     * 将值放入缓存并设置时间
+     *
+     * @param key   键
+     * @param value 值
+     * @param time  时间(秒) -1为无期限
+     * @return true成功 false 失败
+     */
+    public void set(String key, Object value, long time) {
+        if (time > 0) {
+            redisTemplate.opsForValue().set(key, value, time, TimeUnit.SECONDS);
+        } else {
+            set(key, value);
+        }
+    }
+    /**
      * 根据key删除相应值
      */
     public void delete(String key){

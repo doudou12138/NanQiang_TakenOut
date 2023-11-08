@@ -18,12 +18,23 @@ public class EmployeeController {
     @Autowired
     private EmployeeService employeeService;
 
+    /**
+     * 员工登录请求
+     * @param httpServletRequest
+     * @param employee
+     * 1. 判断是否为空,
+     * 2. 登录
+     * @return
+     */
     @PostMapping("/login")
     public Res<Employee> login(
             HttpServletRequest httpServletRequest,
             @RequestBody Employee employee){
-        log.info("尝试登录 with username:"+employee.getUsername());
-        return employeeService.login(employee,httpServletRequest);
+        log.info("正在请求尝试登录 :");
+        if(employee==null){
+            return Res.error("账号密码为空");
+        }
+        return Res.success(employeeService.login(employee,httpServletRequest));
     }
 
     /**
@@ -38,13 +49,31 @@ public class EmployeeController {
         return Res.success("成功退出");
     }
 
+    /**
+     * 员工注册请求
+     * @param httpServletRequest
+     * @param employee
+     * 1. 判断是否为空,
+     * 2. 注册
+     * @return
+     */
     @PostMapping
     public Res<String> save(HttpServletRequest httpServletRequest,@RequestBody Employee employee){
         log.info("正在请求添加员工");
-        return employeeService.toSave(employee,httpServletRequest);
+        if(employee==null){
+            return Res.error("员工信息为空");
+        }
+        return Res.success(employeeService.toSave(employee,httpServletRequest));
 
     }
 
+    /**
+     * 员工分页展示请求
+     * @param page 当前页面
+     * @param pageSize  页面大小
+     * @param name  员工名字(可选地筛选条件)
+     * @return
+     */
     @GetMapping("/page")
     public Res<Page> page(int page,int pageSize,String name){
         log.info("正在请求分页展示员工...");
@@ -53,19 +82,34 @@ public class EmployeeController {
         return Res.success(resPage);
     }
 
+    /**
+     * 员工更新请求
+     * @param request
+     * @param employee
+     * 1. 判断是否为空,
+     * 2. 更新
+     * @return
+     */
     @PutMapping
     public Res<String> update(
             HttpServletRequest request,
             @RequestBody Employee employee){
         log.info("正在请求更新员工信息");
-
-        return employeeService.toUpdate(request,employee);
+        if(employee==null){
+            return Res.error("员工信息为空");
+        }
+        return Res.success(employeeService.toUpdate(request,employee));
     }
 
+    /**
+     * 员工根据id请求
+     * @param id 员工id
+     * @return 员工信息
+     */
     @GetMapping("/{id}")
     public Res<Employee> getById(@PathVariable Long id){
         log.info("正在根据员工id请求员工数据");
-        return employeeService.toGetById(id);
+        return Res.success(employeeService.toGetById(id));
     }
 
 }

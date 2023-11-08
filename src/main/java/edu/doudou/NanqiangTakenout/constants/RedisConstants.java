@@ -1,4 +1,4 @@
-package edu.doudou.NanqiangTakenout.utils.redis;
+package edu.doudou.NanqiangTakenout.constants;
 
 public class RedisConstants {
 

@@ -30,6 +30,13 @@ public class ShoppingCartController {
         return Res.success(shoppingCartService.add(shoppingCart));
     }
 
+    @PostMapping("sub")
+    public Res<ShoppingCart> sub(@RequestBody ShoppingCart shoppingCart){
+        log.info("正在请求从购物车中删除....");
+
+        return Res.success(shoppingCartService.sub(shoppingCart));
+    }
+
     /**
      * 查看购物车
      *

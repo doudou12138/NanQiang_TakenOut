@@ -9,12 +9,12 @@ import javax.servlet.http.HttpServletRequest;
 
 public interface EmployeeService extends IService<Employee> {
 
-    Res<Employee> login(Employee employee, HttpServletRequest httpServletRequest);
-    Res<String> toSave(Employee employee,HttpServletRequest request);
+    Employee login(Employee employee, HttpServletRequest httpServletRequest);
+    String toSave(Employee employee,HttpServletRequest request);
 
     Page toPageWhereName(int page, int pageSize, String name);
 
-    Res<String> toUpdate(HttpServletRequest request, Employee employee);
+    String toUpdate(HttpServletRequest request, Employee employee);
 
-    Res<Employee> toGetById(Long id);
+    Employee toGetById(Long id);
 }

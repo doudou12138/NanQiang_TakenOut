@@ -32,13 +32,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return "手机号为空.";
         }
 
-        if(!belowLimitSmsRequest(phoneNumber)){
+        long count = belowLimitSmsRequest(phoneNumber);
+        if(count==-1){
             return "请求次数过多，请下一个小时再尝试";
         }
+        userCacheService.setBindRequestCount(phoneNumber,count);
 
 
         String veriCode = ValidatorCodeUtil.generateValidateCode(6).toString();
-        userCacheService.setBindRequestCount(phoneNumber);
         //通过阿里云发送验证码.测试已经成功
 //        AliyunSmsUtil.sendMessage(MediaMsgType.LOG_IN,phoneNumber,veriCode);
 
@@ -49,9 +50,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return "成功发送验证码";
     }
 
-    private boolean belowLimitSmsRequest(String phone) {
+    private int belowLimitSmsRequest(String phone) {
         int count = userCacheService.getBindRequestCount(phone);
-        return count<MAX_SMS_REQUEST_PER_HOUR;
+        return count<MAX_SMS_REQUEST_PER_HOUR?count:-1;
     }
 
     @Override

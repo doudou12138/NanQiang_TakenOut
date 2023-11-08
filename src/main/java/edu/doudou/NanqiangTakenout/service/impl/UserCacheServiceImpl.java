@@ -1,7 +1,7 @@
 package edu.doudou.NanqiangTakenout.service.impl;
 
 import edu.doudou.NanqiangTakenout.service.UserCacheService;
-import edu.doudou.NanqiangTakenout.utils.redis.RedisConstants;
+import edu.doudou.NanqiangTakenout.constants.RedisConstants;
 import edu.doudou.NanqiangTakenout.utils.redis.RedisUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,12 +38,17 @@ public class UserCacheServiceImpl implements UserCacheService {
      * 效果稍高于1.0版本,从第一次get到第三次set完成可以一直请求验证.
      */
     @Override
-    public void setBindRequestCount(String phone){
+    public void setBindRequestCount(String phone, long count){
 
         String bindRequestCountKey = getBindRequestCountKey(phone);
-        // 将请求次数缓存到 Redis，设置过期时间
 
         redisUtil.increment(bindRequestCountKey,1);
+
+        // 将请求次数缓存到 Redis，设置过期时间
+        if(count==0){
+            redisUtil.expire(bindRequestCountKey,3600);
+        }
+
     }
 
     /**
@@ -99,7 +104,7 @@ public class UserCacheServiceImpl implements UserCacheService {
         // 获取当前小时的时间戳
         long currentHour = System.currentTimeMillis() / (60 * 60 * 1000);
 
-        return RedisConstants.LOGIN_REQUEST +currentHour+phone+currentHour;
+        return RedisConstants.LOGIN_REQUEST +currentHour+phone;
 
     }
 

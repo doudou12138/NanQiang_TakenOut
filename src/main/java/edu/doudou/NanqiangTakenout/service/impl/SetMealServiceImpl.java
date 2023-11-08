@@ -8,12 +8,14 @@ import edu.doudou.NanqiangTakenout.Entity.SetmealDish;
 import edu.doudou.NanqiangTakenout.common.CustomException;
 import edu.doudou.NanqiangTakenout.dto.SetMealDto;
 import edu.doudou.NanqiangTakenout.mapper.SetMealMapper;
+import edu.doudou.NanqiangTakenout.service.CategoryService;
 import edu.doudou.NanqiangTakenout.service.SetMealDishService;
 import edu.doudou.NanqiangTakenout.service.SetMealService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +25,9 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
 
     @Autowired
     private SetMealDishService setMealDishService;
+
+    @Autowired
+    private CategoryService categoryService;
 
     /**
      * 添加套餐.
@@ -63,8 +68,15 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
         //分页查询
         this.page(pageInfo,queryWrapper);
 
-
         BeanUtils.copyProperties(pageInfo,result,"records");
+
+        //等你优化
+        result.setRecords(pageInfo.getRecords().stream().map(setmeal -> {
+            SetMealDto setMealDto = new SetMealDto();
+            BeanUtils.copyProperties(setmeal,setMealDto);
+            setMealDto.setCategoryName(categoryService.getById(setmeal.getCategoryId()).getName());
+            return setMealDto;
+        }).collect(Collectors.toList()));
 
         //结果在pageInfo中.
         return result;
@@ -72,10 +84,8 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
 
     /**
      * 删除套餐,及其所带的菜品关系
-     * //todo: 事务可优化
      * @param ids
      */
-    @Transactional
     @Override
     public void removeWithDishes(List<Long> ids) {
         //查询套餐状态
@@ -87,13 +97,20 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
         if(count>0){
             throw new CustomException("套餐正在售卖中,不能删除!");
         }
-        //删除套餐本身信息
-        this.removeByIds(ids);
 
-        //删除对应的套餐菜品关系
-        LambdaQueryWrapper<SetmealDish> queryWrapper1 = new LambdaQueryWrapper<>();
-        queryWrapper1.in(SetmealDish::getSetmealId,ids);
-        setMealDishService.remove(queryWrapper1);
+        //删除套餐菜品关系
+        TransactionTemplate transactionTemplate = new TransactionTemplate();
+        transactionTemplate.execute((i)->{
+            //删除套餐本身信息
+            this.removeByIds(ids);
+
+            //删除对应的套餐菜品关系
+            LambdaQueryWrapper<SetmealDish> queryWrapper1 = new LambdaQueryWrapper<>();
+            queryWrapper1.in(SetmealDish::getSetmealId,ids);
+            setMealDishService.remove(queryWrapper1);
+            return true;
+        });
+
 
     }
 

@@ -18,7 +18,7 @@ public interface UserCacheService {
     /**
      * 缓存绑定请求的次数
      */
-    void setBindRequestCount(String phone);
+    void setBindRequestCount(String phone, long count);
 
     /**
      * 获取 绑定请求的验证码
