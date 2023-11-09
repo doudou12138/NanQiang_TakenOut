@@ -30,18 +30,18 @@ public class AddressBookController {
     @PutMapping("/default")
     public Res<AddressBook> setDefault (@RequestBody AddressBook addressBook){
         log.info("正在请求设置默认地址....");
-
+        addressBook.setUserId(BaseContext.getCurrentId());
         return Res.success(addressBookService.setDefault(addressBook));
     }
 
     /**
-     * 查询默认地址
+     * 查询默认地址并缓存
      */
     @GetMapping("/default")
     public Res<AddressBook> getDefault(){
         log.info("正在请求查询默认地址....");
 
-        AddressBook addressBook = addressBookService.getDefault();
+        AddressBook addressBook = addressBookService.getDefault(BaseContext.getCurrentId());
         if(addressBook==null){
             return Res.error("没有默认地址");
         }

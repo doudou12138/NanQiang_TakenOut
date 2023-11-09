@@ -2,6 +2,7 @@ package edu.doudou.NanqiangTakenout.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import edu.doudou.NanqiangTakenout.Entity.*;
 import edu.doudou.NanqiangTakenout.common.BaseContext;
@@ -9,6 +10,8 @@ import edu.doudou.NanqiangTakenout.common.CustomException;
 import edu.doudou.NanqiangTakenout.mapper.OrdersMapper;
 import edu.doudou.NanqiangTakenout.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +40,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
      * @param orders
      */
 
+    @CacheEvict(value = "order",allEntries = true)
     @Override
     @Transactional
     public void submit(Orders orders) {
@@ -104,4 +108,23 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         //清空购物车数据
         shoppingCartService.remove(wrapper);
     }
+
+    @Cacheable(value = "order",key = "'userPage_'+#page+'_'+#pageSize+'_'+#currentId")
+    @Override
+    public Page<Orders> userPage(int page, int pageSize, Long currentId) {
+        LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
+        Page<Orders> pageModel = new Page<>(page,pageSize);
+        wrapper.eq(Orders::getUserId,currentId);
+        wrapper.orderByDesc(Orders::getCheckoutTime);
+        return this.page(pageModel,wrapper);
+    }
+
+    @Cacheable(value = "order",key = "'employeePage_'+#page+'_'+#pageSize+'_'+#currentId")
+    public Page<Orders> employeePage(int page, int pageSize, Long employeeId) {
+        LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
+        Page<Orders> pageModel = new Page<>(page,pageSize);
+        wrapper.orderByDesc(Orders::getCheckoutTime);
+        return this.page(pageModel,wrapper);
+    }
+
 }

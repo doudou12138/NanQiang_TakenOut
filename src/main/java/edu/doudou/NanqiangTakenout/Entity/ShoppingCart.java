@@ -1,14 +1,17 @@
 package edu.doudou.NanqiangTakenout.Entity;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-public class ShoppingCart {
+public class ShoppingCart implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    @TableId
     private Long id;
 
     //名称

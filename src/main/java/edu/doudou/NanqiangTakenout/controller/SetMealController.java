@@ -42,6 +42,7 @@ public class SetMealController {
 
     @GetMapping("/list")
     public Res<List<Setmeal>> list(Setmeal setMeal){
+        log.info("正在请求查询套餐列表....");
         return Res.success(setMealService.tolist(setMeal));
 
     }

@@ -6,8 +6,11 @@ import edu.doudou.NanqiangTakenout.Entity.AddressBook;
 import edu.doudou.NanqiangTakenout.common.BaseContext;
 import edu.doudou.NanqiangTakenout.mapper.AddressBookMapper;
 import edu.doudou.NanqiangTakenout.service.AddressBookService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.Objects;
@@ -15,7 +18,15 @@ import java.util.Objects;
 @Service
 public class AddressBookServiceImpl extends ServiceImpl<AddressBookMapper, AddressBook> implements AddressBookService {
 
-    @Transactional
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
+    /**
+     * 设置默认地址.并调整缓存
+     * @param addressBook
+     * @return
+     */
+    @CachePut(value = "addressBook",key = "'default: '+ #addressBook.userId")
     @Override
     public AddressBook setDefault(AddressBook addressBook) {
         LambdaQueryWrapper<AddressBook> queryWrapper = new LambdaQueryWrapper<>();
@@ -23,19 +34,29 @@ public class AddressBookServiceImpl extends ServiceImpl<AddressBookMapper, Addre
         queryWrapper.eq(AddressBook::getIsDefault,1);
         AddressBook addressBook1 = this.getOne(queryWrapper);
 
-        if(!Objects.equals(addressBook1.getId(), addressBook.getId())){
-            addressBook1.setIsDefault(0);
-            this.save(addressBook1);
+        if(addressBook1==null){
             addressBook.setIsDefault(1);
-            this.save(addressBook);
-            return addressBook;
+            this.updateById(addressBook);
+        }else if(!Objects.equals(addressBook1.getId(), addressBook.getId())){
+            transactionTemplate.executeWithoutResult((status)->{
+                try {
+                    addressBook1.setIsDefault(0);
+                    this.updateById(addressBook1);
+                    addressBook.setIsDefault(1);
+                    this.updateById(addressBook);
+                }catch (Exception e) {
+                    status.setRollbackOnly();
+                    throw e;
+                }
+            });
         }
 
         return addressBook;
     }
 
+    @Cacheable(value = "addressBook", key = "'default: '+ #userId")
     @Override
-    public AddressBook getDefault() {
+    public AddressBook getDefault(Long userId) {
         LambdaQueryWrapper<AddressBook> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(AddressBook::getUserId, BaseContext.getCurrentId());
         queryWrapper.eq(AddressBook::getIsDefault,1);

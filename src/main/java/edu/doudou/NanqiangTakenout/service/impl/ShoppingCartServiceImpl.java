@@ -14,6 +14,13 @@ import java.util.List;
 @Service
 public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper,ShoppingCart> implements ShoppingCartService {
 
+    /**
+     * 1.判断购物车中是否已经存在该菜品或者套餐
+     * 2.如果存在，则在原来数量基础上加一
+     * 3.如果不存在，则添加到购物车，数量默认就是一
+     * @param shoppingCart
+     * @return
+     */
     @Override
     public ShoppingCart add(ShoppingCart shoppingCart){
         ShoppingCart cartServiceOne = getDishOrSetmeal(shoppingCart);
@@ -85,6 +92,7 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper,Shop
         this.remove(queryWrapper);
     }
 
+
     /**
      * 1.判断购物车中是否已经存在该菜品或者套餐
      * 2.如果存在，就在原来数量基础上减一
@@ -99,13 +107,12 @@ public class ShoppingCartServiceImpl extends ServiceImpl<ShoppingCartMapper,Shop
         if(cartServiceOne!= null){
             //如果存在，就在原来数量基础上减一
             Integer number = cartServiceOne.getNumber();
-            if(number > 1){
-                cartServiceOne.setNumber(number - 1);
-                this.updateById(cartServiceOne);
-            }else{
-                //如果数量减到一，则删除该购物车数据
-                cartServiceOne = null;
+            cartServiceOne.setNumber(Math.max(number - 1, 0));
+            if(cartServiceOne.getNumber() == 0){
                 this.removeById(cartServiceOne.getId());
+            }else {
+                this.updateById(cartServiceOne);
+
             }
         }
         return cartServiceOne;

@@ -29,12 +29,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         String phoneNumber = user.getPhone();
         if(phoneNumber==null){
-            return "手机号为空.";
+            return "0手机号为空.";
         }
 
         long count = belowLimitSmsRequest(phoneNumber);
         if(count==-1){
-            return "请求次数过多，请下一个小时再尝试";
+            return "0请求次数过多，请下一个小时再尝试";
         }
         userCacheService.setBindRequestCount(phoneNumber,count);
 
@@ -47,7 +47,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         //将验证码保存到Session
         userCacheService.setBindConfirmCode(phoneNumber,veriCode);
 
-        return "成功发送验证码";
+        return "1成功发送验证码";
     }
 
     private int belowLimitSmsRequest(String phone) {

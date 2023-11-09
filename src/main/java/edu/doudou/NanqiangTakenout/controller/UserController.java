@@ -21,7 +21,11 @@ public class UserController {
     @PostMapping("/sendMsg")
     public Res<String> sendVerificationMsg(@RequestBody User user, HttpSession session){
         log.info("正在请求发送短信验证码....");
-        return Res.success(userService.sendVerificationMsg(user,session));
+        String str = userService.sendVerificationMsg(user,session);
+        if(str.charAt(0)=='0'){
+            return Res.error(str.substring(1));
+        }
+        return Res.success("发送验证码成功");
     }
 
     @PostMapping("/login")

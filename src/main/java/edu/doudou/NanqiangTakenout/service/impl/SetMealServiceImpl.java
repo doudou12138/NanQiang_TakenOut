@@ -13,6 +13,9 @@ import edu.doudou.NanqiangTakenout.service.SetMealDishService;
 import edu.doudou.NanqiangTakenout.service.SetMealService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -35,6 +38,10 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
      * 2. 修改套餐菜品关系表
      * @param setMealDto
      */
+    @Caching(evict = {
+            @CacheEvict(value = "setmealListCache",key = "#setMealDto.categoryId+'_'+#setMealDto.status"),
+            @CacheEvict(value = "setmealPageCache",allEntries = true)
+    })
     @Transactional
     @Override
     public void saveWithDishes(SetMealDto setMealDto) {
@@ -46,14 +53,15 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
     }
 
     /**
-     * todo:根据categoryId查询name
      *
      * 分表查询套餐的信息.(可选地筛选条件name)
      * @param page
      * @param pageSize
      * @param name
      * @return
+     * todo:将查询从流中移除
      */
+    @Cacheable(value = "setmealPageCache",key = "#page+'_'+#pageSize+'_'+#name")
     @Override
     public Page tolist(int page, int pageSize, String name) {
         Page<SetMealDto> result = new Page<>(page,pageSize);
@@ -85,7 +93,12 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
     /**
      * 删除套餐,及其所带的菜品关系
      * @param ids
+     * //todo:事务优化
      */
+    @Caching(evict = {
+            @CacheEvict(value = "setmealPageCache",allEntries = true),
+            @CacheEvict(value = "setmealListCache",allEntries = true)
+    })
     @Override
     public void removeWithDishes(List<Long> ids) {
         //查询套餐状态
@@ -114,6 +127,12 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
 
     }
 
+    /**
+     * 根据套餐id查询套餐信息.并且对查询结果进行缓存
+     * @param setMeal
+     * @return
+     */
+    @Cacheable(value = "setmealListCache",key = "#setMeal.categoryId+'_'+#setMeal.status")
     @Override
     public List<Setmeal> tolist(Setmeal setMeal) {
 
@@ -125,7 +144,6 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
         List<Setmeal> list = this.list(queryWrapper);
         return list;
 
-
     }
 
     /**
@@ -134,7 +152,11 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
      */
     private void addSetMealDishesWithAdjust(SetMealDto setMealDto){
         Long setMealId = setMealDto.getId();
-        List<SetmealDish> setMealDishList= setMealDto.getSetMealDishList().stream().map((item) -> {
+        List<SetmealDish> dishes = setMealDto.getSetMealDishList();
+        if(dishes==null){
+            return;
+        }
+        List<SetmealDish> setMealDishList= dishes.stream().map((item) -> {
             item.setId(setMealId);
             return item;
         }).collect(Collectors.toList());

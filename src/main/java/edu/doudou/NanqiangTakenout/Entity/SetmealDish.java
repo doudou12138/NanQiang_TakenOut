@@ -2,8 +2,10 @@ package edu.doudou.NanqiangTakenout.Entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -11,9 +13,10 @@ import java.time.LocalDateTime;
  * 记录套餐和菜品的关系,以及菜品在套餐中的表现
  */
 @Data
-public class SetmealDish {
+public class SetmealDish implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    @TableId
     private Long id;
 
 
