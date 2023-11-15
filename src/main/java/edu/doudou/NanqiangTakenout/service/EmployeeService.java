@@ -12,7 +12,7 @@ public interface EmployeeService extends IService<Employee> {
     Employee login(Employee employee, HttpServletRequest httpServletRequest);
     String toSave(Employee employee,HttpServletRequest request);
 
-    Page toPageWhereName(int page, int pageSize, String name);
+    Page<Employee> toPageWhereName(int page, int pageSize, String name);
 
     String toUpdate(HttpServletRequest request, Employee employee);
 

@@ -48,6 +48,7 @@ public class LoginCheckFilter implements Filter {
             return;
         }
 
+        log.info("本次请求{}需要处理",requestURI);
         //4、判断登录状态，如果已登录，则直接放行
         //1. 员工
         if(request.getSession().getAttribute("employee") != null){
