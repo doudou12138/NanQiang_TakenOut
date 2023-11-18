@@ -20,7 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,11 +61,10 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
      * @param pageSize
      * @param name
      * @return
-     * todo:将查询从流中移除
      */
     @Cacheable(value = "setmealPageCache",key = "#page+'_'+#pageSize+'_'+#name")
     @Override
-    public Page tolist(int page, int pageSize, String name) {
+    public Page toPage(int page, int pageSize, String name) {
         Page<SetMealDto> result = new Page<>(page,pageSize);
         //分页构造器对象
         Page<Setmeal> pageInfo = new Page<>(page,pageSize);
@@ -72,20 +73,32 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
         LambdaQueryWrapper<Setmeal> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.like(name!=null, Setmeal::getName,name);
         queryWrapper.orderByDesc(Setmeal::getUpdateTime);
-
         //分页查询
         this.page(pageInfo,queryWrapper);
 
         BeanUtils.copyProperties(pageInfo,result,"records");
-
         //等你优化
-        result.setRecords(pageInfo.getRecords().stream().map(setmeal -> {
-            SetMealDto setMealDto = new SetMealDto();
-            BeanUtils.copyProperties(setmeal,setMealDto);
-            setMealDto.setCategoryName(categoryService.getById(setmeal.getCategoryId()).getName());
-            return setMealDto;
-        }).collect(Collectors.toList()));
+//        result.setRecords(pageInfo.getRecords().stream().map(setmeal -> {
+//            SetMealDto setMealDto = new SetMealDto();
+//            BeanUtils.copyProperties(setmeal,setMealDto);
+//            setMealDto.setCategoryName(categoryService.getById(setmeal.getCategoryId()).getName());
+//            return setMealDto;
+//        }).collect(Collectors.toList()));
 
+        //得到分类名称 map
+        List<Setmeal> setmealRecord = pageInfo.getRecords();
+        List<Long> ids = setmealRecord.stream().map(Setmeal::getCategoryId).collect(Collectors.toList());
+        Map<Long,String> idAndNamesMap = categoryService.idAndNames(ids);
+
+        List<SetMealDto> setMealDtoRecord = new ArrayList<>();
+        for(int i=0;i<setmealRecord.size();i++){
+            SetMealDto setMealDto = new SetMealDto();
+            BeanUtils.copyProperties(setmealRecord.get(i),setMealDto);
+            setMealDto.setCategoryName(idAndNamesMap.get(setMealDto.getCategoryId()));
+            setMealDtoRecord.add(setMealDto);
+        }
+
+        result.setRecords(setMealDtoRecord);
         //结果在pageInfo中.
         return result;
     }
@@ -93,7 +106,6 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
     /**
      * 删除套餐,及其所带的菜品关系
      * @param ids
-     * //todo:事务优化
      */
     @Caching(evict = {
             @CacheEvict(value = "setmealPageCache",allEntries = true),
@@ -113,15 +125,19 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
 
         //删除套餐菜品关系
         TransactionTemplate transactionTemplate = new TransactionTemplate();
-        transactionTemplate.execute((i)->{
-            //删除套餐本身信息
-            this.removeByIds(ids);
+        transactionTemplate.executeWithoutResult((i)->{
+            try {
+                //删除套餐本身信息
+                this.removeByIds(ids);
 
-            //删除对应的套餐菜品关系
-            LambdaQueryWrapper<SetmealDish> queryWrapper1 = new LambdaQueryWrapper<>();
-            queryWrapper1.in(SetmealDish::getSetmealId,ids);
-            setMealDishService.remove(queryWrapper1);
-            return true;
+                //删除对应的套餐菜品关系
+                LambdaQueryWrapper<SetmealDish> queryWrapper1 = new LambdaQueryWrapper<>();
+                queryWrapper1.in(SetmealDish::getSetmealId, ids);
+                setMealDishService.remove(queryWrapper1);
+            }catch(Exception e){
+                i.setRollbackOnly();
+                throw new CustomException("套餐删除失败!请重试");
+            }
         });
 
 
@@ -134,7 +150,7 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, Setmeal> impl
      */
     @Cacheable(value = "setmealListCache",key = "#setMeal.categoryId+'_'+#setMeal.status")
     @Override
-    public List<Setmeal> tolist(Setmeal setMeal) {
+    public List<Setmeal> toList(Setmeal setMeal) {
 
         LambdaQueryWrapper<Setmeal> queryWrapper = new LambdaQueryWrapper<Setmeal>();
         queryWrapper.eq(setMeal.getCategoryId()!=null, Setmeal::getCategoryId,setMeal.getCategoryId());

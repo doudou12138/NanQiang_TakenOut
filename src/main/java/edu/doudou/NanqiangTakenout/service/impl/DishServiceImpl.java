@@ -7,6 +7,7 @@ import edu.doudou.NanqiangTakenout.Entity.Category;
 import edu.doudou.NanqiangTakenout.Entity.Dish;
 import edu.doudou.NanqiangTakenout.Entity.DishFlavor;
 import edu.doudou.NanqiangTakenout.common.CustomException;
+import edu.doudou.NanqiangTakenout.constants.CommonConstants;
 import edu.doudou.NanqiangTakenout.dto.DishDto;
 import edu.doudou.NanqiangTakenout.mapper.DishMapper;
 import edu.doudou.NanqiangTakenout.service.CategoryService;
@@ -16,11 +17,12 @@ import edu.doudou.NanqiangTakenout.service.DishService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.StopWatch;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,8 +62,8 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>  implements D
 
 
         //更改后的菜品列表信息同步到缓存
-        List<DishDto> dishDtoList = this.tolist(dishDto);
-        dishCacheService.saveDishList(dishDto,dishDtoList);
+        this.tolist(dishDto);
+        this.toPage(CommonConstants.PAGE,CommonConstants.PAGE_SIZE,null);
 
     }
 
@@ -72,11 +74,16 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>  implements D
      * @param page
      * @param pageSize
      * @param name
-     * //todo: 优化查询
      * @return
      */
+
     @Override
     public Page toPage(int page, int pageSize, String name) {
+        Page<DishDto> res = dishCacheService.getDishPage(name,page,pageSize);
+        if(res!=null){
+            return res;
+        }
+
         Page<Dish> pageInfo = new Page<>(page,pageSize);
         LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
         //模糊查询,(根据名字)分页查询所有的菜品
@@ -90,19 +97,43 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>  implements D
         //Page中的List<T> records 其实就是目标对象的列表.因为我们要手动处理其中的属性,所以不copy
         BeanUtils.copyProperties(pageInfo,dishDtoPage,"records");
 
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+
         //将Dish转化为DishDto
         List<Dish> records = pageInfo.getRecords();
 
+        List<DishDto> dishDtoRecords = new ArrayList<>();
+
         //将categoryId转化为categoryName
-        dishDtoPage.setRecords( records.stream().map(dish -> {
+
+//        //有多少菜品就查询多少次数据库,无法接受.
+//        dishDtoRecords = records.stream().map(dish -> {
+//            DishDto dishDto = new DishDto();
+//            BeanUtils.copyProperties(dish,dishDto);
+//            //将categoryId转化为categoryName
+//            Category category = categoryService.getById(dish.getCategoryId());
+//            dishDto.setCategoryName(category.getName());
+//            return dishDto;
+//        }).collect(Collectors.toList());
+
+        //根据所有用到的categoryIds一次插到所有的name.防止多次数据库查询
+        List<Long> ids = records.stream().map(Dish::getCategoryId).collect(Collectors.toList());
+        //生成categoryid到name的map
+        Map<Long,String> categoryIdAndNameMap = categoryService.idAndNames(ids);
+
+        for(Dish dish : records){
             DishDto dishDto = new DishDto();
             BeanUtils.copyProperties(dish,dishDto);
-            //将categoryId转化为categoryName
-            Category category = categoryService.getById(dish.getCategoryId());
-            dishDto.setCategoryName(category.getName());
-            return dishDto;
-        }).collect(Collectors.toList()));
+            dishDto.setCategoryName(categoryIdAndNameMap.get(dish.getCategoryId()));
+            dishDtoRecords.add(dishDto);
+        }
 
+        stopWatch.stop();
+        System.out.println(stopWatch.prettyPrint());
+
+        dishDtoPage.setRecords(dishDtoRecords);
+        dishCacheService.saveDishPage(name,dishDtoPage,page,pageSize);
         return dishDtoPage;
     }
 
@@ -156,15 +187,14 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>  implements D
         });
 
         //添加缓存
-        dishCacheService.saveDishList(dishDto,this.tolist(dishDto));
-
+        this.tolist(dishDto);
+        this.toPage(CommonConstants.PAGE,CommonConstants.PAGE_SIZE,null);
     }
 
     /**
      * 返回菜品列表
      * @param dish: 筛选条件,现在是根据种类查询
      * @return dishDto类型
-     * todo: 优化查询
      */
     @Override
     public List<DishDto> tolist(Dish dish) {
@@ -180,17 +210,29 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>  implements D
        List<Dish> dishes = getDishListFromDb(dish);
 
         //2.2 转化
-        result = dishes.stream().map((item)->{
-            DishDto dishDto = new DishDto();
-            BeanUtils.copyProperties(item,dishDto);
-            //根据分类id查找分类名,根据菜品id查找口味
-            Category category = categoryService.getById(item.getCategoryId());
-            if(category!=null){
-                dishDto.setCategoryName(category.getName());
-            }
+//        result = dishes.stream().map((item)->{
+//            DishDto dishDto = new DishDto();
+//            BeanUtils.copyProperties(item,dishDto);
+//            //根据分类id查找分类名,根据菜品id查找口味
+//            Category category = categoryService.getById(item.getCategoryId());
+//            if(category!=null){
+//                dishDto.setCategoryName(category.getName());
+//            }
+//
+//            return dishDto;
+//        }).collect(Collectors.toList());
 
-            return dishDto;
-        }).collect(Collectors.toList());
+        //根据所有用到的categoryIds一次插到所有的name.防止多次数据库查询
+        List<Long> ids = dishes.stream().map(Dish::getCategoryId).collect(Collectors.toList());
+        //生成categoryid到name的map
+        Map<Long,String> categoryIdAndNameMap = categoryService.idAndNames(ids);
+
+        for(Dish dish_i : dishes){
+            DishDto dishDto = new DishDto();
+            BeanUtils.copyProperties(dish_i,dishDto);
+            dishDto.setCategoryName(categoryIdAndNameMap.get(dish_i.getCategoryId()));
+            result.add(dishDto);
+        }
 
         //加入缓存
         dishCacheService.saveDishList(dish,result);

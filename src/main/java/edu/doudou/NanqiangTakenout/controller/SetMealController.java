@@ -30,7 +30,7 @@ public class SetMealController {
     @GetMapping("/page")
     public Res<Page> page(int page,int pageSize,String name){
         log.info("正在请求分页显示套餐....");
-        return Res.success(setMealService.tolist(page,pageSize,name));
+        return Res.success(setMealService.toPage(page,pageSize,name));
     }
 
     @DeleteMapping
@@ -43,7 +43,7 @@ public class SetMealController {
     @GetMapping("/list")
     public Res<List<Setmeal>> list(Setmeal setMeal){
         log.info("正在请求查询套餐列表....");
-        return Res.success(setMealService.tolist(setMeal));
+        return Res.success(setMealService.toList(setMeal));
 
     }
 

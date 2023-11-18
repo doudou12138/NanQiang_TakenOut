@@ -30,7 +30,6 @@ public class DishController {
     @GetMapping("/page")
     public Res<Page> page(int page, int pageSize, String name){
         log.info("正在请求分页查询菜品");
-
         return Res.success(dishService.toPage(page,pageSize,name));
     }
 
@@ -57,7 +56,7 @@ public class DishController {
      */
     @GetMapping("/list")
     public Res<List<DishDto>> list(Dish dish){
-        log.info("正在请求获取彩屏列表");
+        log.info("正在请求获取菜品列表");
 
         return Res.success(dishService.tolist(dish));
     }

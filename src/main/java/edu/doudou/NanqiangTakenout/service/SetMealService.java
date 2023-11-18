@@ -11,10 +11,10 @@ public interface SetMealService extends IService<Setmeal> {
 
     void saveWithDishes(SetMealDto setMealDto);
 
-    Page tolist(int page, int pageSize, String name);
+    Page toPage(int page, int pageSize, String name);
 
     void removeWithDishes(List<Long> ids);
 
-    List<Setmeal> tolist(Setmeal setMeal);
+    List<Setmeal> toList(Setmeal setMeal);
 }
 

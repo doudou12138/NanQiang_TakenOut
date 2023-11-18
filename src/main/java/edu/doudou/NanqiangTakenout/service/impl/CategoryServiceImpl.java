@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
@@ -78,6 +80,17 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         List<Category> list = this.list(queryWrapper);
 
         return list;
+    }
+
+    @Override
+    public Map<Long,String> idAndNames(List<Long> ids){
+        LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(Category::getId,ids);
+        queryWrapper.select(Category::getId,Category::getName);
+        List<Map<String,Object>> categoryList =this.listMaps(queryWrapper);
+        //生成categoryid到name的map
+        Map<Long,String> categoryIdAndNameMap = categoryList.stream().collect(Collectors.toMap(map -> (Long)map.get("id"), map -> (String)map.get("name")));
+        return categoryIdAndNameMap;
     }
 
 }

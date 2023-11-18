@@ -15,7 +15,7 @@ public class Dish implements Serializable{
     private static final long serialVersionUID = 1L;
 
     @TableId
-    private long id;
+    private Long id;
 
     private String name;
 

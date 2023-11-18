@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import edu.doudou.NanqiangTakenout.Entity.Category;
 
 import java.util.List;
+import java.util.Map;
 
 public interface CategoryService extends IService<Category> {
 
@@ -13,4 +14,7 @@ public interface CategoryService extends IService<Category> {
     String remove(Long id);
 
     List<Category> toListByType(Category category);
+
+    Map<Long,String> idAndNames(List<Long> ids);
+
 }
