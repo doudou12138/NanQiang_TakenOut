@@ -36,6 +36,5 @@ public interface DishCacheService {
 
     void deleteDishListCache(DishDto dishDto);
 
-    void deleteDishPageCache(String name,int page,int pageSize);
 
 }

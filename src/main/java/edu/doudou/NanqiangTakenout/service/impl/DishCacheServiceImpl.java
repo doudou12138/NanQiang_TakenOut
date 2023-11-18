@@ -70,11 +70,6 @@ public class DishCacheServiceImpl implements DishCacheService {
         redisUtil.delete(key);
     }
 
-    @Override
-    public void deleteDishPageCache(String name, int page, int pageSize) {
-        String key = getDishPageKey(name,page,pageSize);
-        redisUtil.delete(key);
-    }
 
 
     private String getDishListKey(Dish dish){

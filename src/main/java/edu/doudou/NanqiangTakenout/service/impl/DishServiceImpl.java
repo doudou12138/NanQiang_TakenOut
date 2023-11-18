@@ -97,8 +97,9 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>  implements D
         //Page中的List<T> records 其实就是目标对象的列表.因为我们要手动处理其中的属性,所以不copy
         BeanUtils.copyProperties(pageInfo,dishDtoPage,"records");
 
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+
 
         //将Dish转化为DishDto
         List<Dish> records = pageInfo.getRecords();
@@ -129,8 +130,8 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>  implements D
             dishDtoRecords.add(dishDto);
         }
 
-        stopWatch.stop();
-        System.out.println(stopWatch.prettyPrint());
+//        stopWatch.stop();
+//        System.out.println(stopWatch.prettyPrint());
 
         dishDtoPage.setRecords(dishDtoRecords);
         dishCacheService.saveDishPage(name,dishDtoPage,page,pageSize);
