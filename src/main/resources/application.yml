@@ -3,12 +3,42 @@ server:
 spring:
   application:
     name: nanqiang_takenout
-  datasource:
-    druid:
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://localhost:3306/reggie?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true # 你的数据库地址
-      username: username  # 你的数据库用户名
-      password: password  # 你的数据库密码
+  # 一个数据库
+  # datasource:
+    # druid:
+    #   driver-class-name: com.mysql.cj.jdbc.Driver
+    #   url: jdbc:mysql://localhost:3306/reggie?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true # 你的数据库地址
+    #   username: ${username}  # 你的数据库用户名
+    #   password: ${password}  # 你的数据库密码
+
+  # 读写分离版
+  shardingsphere:
+    datasource:
+      names:
+        master, slave
+      # 主数据源
+      master:
+        type: com.alibaba.druid.pool.DruidDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://${master_ip}:3306/nanqiang_takenout?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true # 你的数据库地址
+        username: ${username}  # 你的数据库用户名
+        password: ${password}  # 你的数据库密码
+      # 从数据源
+      slave:
+        type: com.alibaba.druid.pool.DruidDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://${slave_ip}:3306/nanqiang_takenout?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allow
+        username: ${username}  # 你的数据库用户名
+        password: ${password}  # 你的数据库密码
+    masterslave:
+      # 读写分离配置
+      load-balance-algorithm-type: round_robin # 轮询
+      name: dataSource
+      master-data-source-name: master
+      slave-data-source-names: slave
+  main:
+    # 因为我们涉及到多个数据库,所以会有多个数据源的bean
+    allow-bean-definition-overriding: true  # 允许声明多个bean
   redis:
     host: localhost
     port: 6379
@@ -27,4 +57,4 @@ mybatis-plus:
     db-config:
       id-type: ASSIGN_ID
 nanqiang:
-  path: D:\image\    # 上传图片存放位置
+  path: D:/image/    # 上传图片存放位置
