@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import edu.doudou.NanqiangTakenout.Entity.AddressBook;
 import edu.doudou.NanqiangTakenout.common.BaseContext;
+import edu.doudou.NanqiangTakenout.common.CustomException;
 import edu.doudou.NanqiangTakenout.mapper.AddressBookMapper;
 import edu.doudou.NanqiangTakenout.service.AddressBookService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -29,10 +31,9 @@ public class AddressBookServiceImpl extends ServiceImpl<AddressBookMapper, Addre
     @CachePut(value = "addressBook",key = "'default: '+ #addressBook.userId")
     @Override
     public AddressBook setDefault(AddressBook addressBook) {
-        LambdaQueryWrapper<AddressBook> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(AddressBook::getUserId,addressBook.getUserId());
-        queryWrapper.eq(AddressBook::getIsDefault,1);
-        AddressBook addressBook1 = this.getOne(queryWrapper);
+
+        //到数据库中查找默认地址
+        AddressBook addressBook1 = this.getDefault(BaseContext.getCurrentId());
 
         if(addressBook1==null){
             addressBook.setIsDefault(1);
@@ -54,11 +55,17 @@ public class AddressBookServiceImpl extends ServiceImpl<AddressBookMapper, Addre
         return addressBook;
     }
 
+    /**
+     * 获取默认地址.并调整缓存
+     * @param userId
+     * @return
+     */
+    //todo:考虑给用户id和默认标记加复合索引?
     @Cacheable(value = "addressBook", key = "'default: '+ #userId")
     @Override
     public AddressBook getDefault(Long userId) {
         LambdaQueryWrapper<AddressBook> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(AddressBook::getUserId, BaseContext.getCurrentId());
+        queryWrapper.eq(AddressBook::getUserId, userId);
         queryWrapper.eq(AddressBook::getIsDefault,1);
 
         return this.getOne(queryWrapper);
@@ -80,4 +87,31 @@ public class AddressBookServiceImpl extends ServiceImpl<AddressBookMapper, Addre
 
         return this.list(queryWrapper);
     }
+
+
+    /**
+     * 删除地址.
+     * 条件: 有对应地址,且不为默认地址
+     * @param id
+     * @return
+     */
+    @Override
+    public AddressBook delete(Long id) {
+        AddressBook addressBook = this.getById(id);
+        if(addressBook==null){
+            throw new CustomException("删除一个不存在的地址");
+        }else if(addressBook.getIsDefault()==1){
+            throw new CustomException("无法删除默认地址");
+        }
+
+        this.removeById(id);
+        return addressBook;
+    }
+
+    @CacheEvict(value="addressBook",key="'default: '+#addressBook.userId")
+    @Override
+    public boolean update(AddressBook addressBook){
+        return this.updateById(addressBook);
+    }
+
 }

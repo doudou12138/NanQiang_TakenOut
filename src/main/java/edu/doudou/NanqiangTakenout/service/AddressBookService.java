@@ -12,4 +12,8 @@ public interface AddressBookService extends IService<AddressBook> {
     AddressBook getDefault(Long userId);
 
     List<AddressBook> toList(AddressBook addressBook);
+
+    AddressBook delete(Long id);
+
+    boolean update(AddressBook addressBook);
 }

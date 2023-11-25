@@ -18,7 +18,6 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
         log.info("公共字段插入时填充...");
-        log.info("metaObject:(记得删除我)   "+metaObject);
         metaObject.setValue("createTime", LocalDateTime.now());
         metaObject.setValue("updateTime",LocalDateTime.now());
 
@@ -26,6 +25,10 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
         metaObject.setValue("updateUser",BaseContext.getCurrentId());
     }
 
+    /**
+     * 更新时进行填充
+     * @param metaObject
+     */
     @Override
     public void updateFill(MetaObject metaObject) {
         log.info("公共字段更新时填充...");

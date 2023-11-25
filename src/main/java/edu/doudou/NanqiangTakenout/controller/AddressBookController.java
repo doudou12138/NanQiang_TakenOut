@@ -27,11 +27,22 @@ public class AddressBookController {
         return Res.success(addressBook);
     }
 
+    @PutMapping
+    public Res<AddressBook> update(@RequestBody AddressBook addressBook){
+        log.info("正在请求更新地址....");
+        boolean success = addressBookService.update(addressBook);
+        if(!success){
+            return Res.error("更新失败,请稍后再试");
+        }
+        return Res.success(addressBook);
+    }
+
     @PutMapping("/default")
     public Res<AddressBook> setDefault (@RequestBody AddressBook addressBook){
         log.info("正在请求设置默认地址....");
         addressBook.setUserId(BaseContext.getCurrentId());
-        return Res.success(addressBookService.setDefault(addressBook));
+        AddressBook defaultAddressBook = addressBookService.setDefault(addressBook);
+        return Res.success(defaultAddressBook);
     }
 
     /**
@@ -50,7 +61,15 @@ public class AddressBookController {
 
     @GetMapping("/list")
     public Res<List<AddressBook>> list(AddressBook addressBook){
+        log.info("正在展示地址簿列表");
         return Res.success(addressBookService.toList(addressBook));
+    }
+
+    @GetMapping("/{id}")
+    public Res<AddressBook> get(@PathVariable("id") Long id){
+        log.info("正在根据地址id查询地址信息");
+        AddressBook addressBook = addressBookService.getById(id);
+        return Res.success(addressBook);
     }
 
 }
